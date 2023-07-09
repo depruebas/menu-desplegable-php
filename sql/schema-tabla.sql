@@ -43,7 +43,7 @@ CREATE TABLE `menus` (
 DROP TABLE IF EXISTS `menus_contenido`;
 CREATE TABLE `menus_contenido` (
   `id` int NOT NULL,
-  `course_id` int NOT NULL,
+  `menu_id` int NOT NULL,
   `title` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `brief` text,
   `text` text NOT NULL,
