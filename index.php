@@ -3,17 +3,22 @@
 
 $db = mysqli_connect("172.21.0.2", "root", "root", "ejemplo_menus", 3306);
 
-$rows = $db->query( "
-    select a.id, a.name, a.alias, a.type, b.id as sub_id, b.name as sub_name, 
-    c.id as topic_id, c.title as topic_title
-    from menus as a
-    inner join menus as b On a.id = b.parent_id
-    inner join menus_contenido as c On c.course_id = b.id
-    where a.id = 
-    order by b.orden asc, c.orden asc")
-  ->fetch_all();
+$rows = $db->query( "select m.id as menu_id, m.name as menu_name, 
+    mm.id as submenu_id, mm.name as submenu_name, mm.orden as submenu_orden,
+      mc.id as tema_id, mc.title as tema_title, mc.orden as tema_orden
+      from menus as m
+      inner join menus as mm On m.id = mm.parent_id
+      inner join menus_contenido as mc On mc.menu_id = mm.id
+      where m.id = 1
+      order by mm.orden asc, mc.orden asc;")
+  ->fetch_all(MYSQLI_ASSOC);
 
-  print( "<pre>" . print_r( $rows, true) . "</pre>");
+$menus = $db->query( "select GROUP_CONCAT(id SEPARATOR ', ') as ids from menus where parent_id = 1")
+->fetch_all(MYSQLI_ASSOC);
+
+
+// Para mostrar los datos por pantalla en modo raw.
+// print( "<pre>" . print_r( $rows, true) . "</pre>");
 
 ?>
 
@@ -50,36 +55,37 @@ $rows = $db->query( "
 
       <nav id="sidebar" class=sidebar2 style="background-color: #F7F7F7; margin: 0px;">
         <div class="p-4 pt-5 sidebar3"  style="background-color: #F7F7F7;">
-          <h5>Categories</h5>
+          <h5><?php echo $rows[0]['menu_name']; ?></h5>
           <ul class="components mb-5">
+
+          <?php
+            $submenu = '';  
+
+            for( $i = 0; $i < count( $rows); $i++)
+            {   
+
+              if ( $submenu != $rows[$i]['submenu_id'])
+              {
+                echo '<li class="list-unstyled">';
+                echo '<a id=Submenu_'.$rows[$i]['submenu_id'].' href="#" data-toggle="collapse" aria-expanded="false" class="">
+                  <i class="fa-solid fa-circle fa-0xs"></i>'.$rows[$i]['submenu_name'].'</a>';
+                echo '<ul class="collapse " id="pageSubmenu_'.$rows[$i]['submenu_id'].'">';
+              }
+
+              echo '<li class="list-unstyled"><a href="/class/'.$rows[$i]['tema_id'].'"><i class="fa fa-chevron-right mr-2 fa-0xs"></i>'.$rows[$i]['tema_title'].'</a></li>';
+
+              $submenu = $rows[$i]['submenu_id'];
+
+              if ( $submenu != $rows[$i+1]['submenu_id'])
+              {
+                echo '</ul></li>';
+              }
+              
+            }
+
+
+        ?>
             
-            <li class="list-unstyled">
-              <a id=Submenu1 href="#" data-toggle="collapse" aria-expanded="false" class=""><i class="fa-solid fa-circle fa-0xs"></i>Menú 1</a>
-              <ul class="collapse " id="pageSubmenu1">
-                <li class="list-unstyled"><a href="#"><i class="fa fa-chevron-right mr-2 fa-0xs"></i>Submenu 1-1</a></li>
-                <li class="list-unstyled"><a href="#"><i class="fa fa-chevron-right mr-2 fa-0xs"></i>Submenu 1-2</a></li>
-              </ul>
-            </li>
-            <li class="list-unstyled">
-              <a id=Submenu2 href="#" data-toggle="collapse" aria-expanded="false" class=""><i class="fa-solid fa-circle fa-0xs"></i>Título del Menú 2</a>
-              <ul class="collapse list-unstyled" id="pageSubmenu2">
-                <li class="list-unstyled"><a href="#"><i class="fa fa-chevron-right mr-2 fa-0xs"></i>Submenu 2-1</a></li>
-                <li class="list-unstyled"><a href="#"><i class="fa fa-chevron-right mr-2 fa-0xs"></i>Títiulo del Submenu 2-2</a></li>
-                <li class="list-unstyled"><a href="#"><i class="fa fa-chevron-right mr-2 fa-0xs"></i>Submenu 2-3</a></li>
-                <li class="list-unstyled"><a href="#"><i class="fa fa-chevron-right mr-2 fa-0xs"></i>Submenu 2-4</a></li>
-              </ul>
-            </li>
-            <li class="list-unstyled">
-              <a id=Submenu3 href="#" data-toggle="collapse" aria-expanded="false" class=""><i class="fa-solid fa-circle fa-0xs"></i>Menú 3</a>
-              <ul class="collapse" id="pageSubmenu3">
-                <li class="list-unstyled"><a href="#"><i class="fa fa-chevron-right mr-2 fa-0xs"></i>Submenu 3-1</a></li>
-                <li class="list-unstyled"><a href="#"><i class="fa fa-chevron-right mr-2 fa-0xs"></i>Submenu 3-2</a></li>
-                <li class="list-unstyled"><a href="#"><i class="fa fa-chevron-right mr-2 fa-0xs"></i>Submenu 3-3</a></li>
-                <li class="list-unstyled"><a href="#"><i class="fa fa-chevron-right mr-2 fa-0xs"></i>Submenu 3-4</a></li>
-                <li class="list-unstyled"><a href="#"><i class="fa fa-chevron-right mr-2 fa-0xs"></i>Submenu 3-5</a></li>
-                <li class="list-unstyled"><a href="#"><i class="fa fa-chevron-right mr-2 fa-0xs"></i>Submenu 3-6</a></li>
-              </ul>
-            </li>
             
           </ul>
           <div class="mb-5">
@@ -115,3 +121,47 @@ $rows = $db->query( "
     <script src="/js/main.js"></script>
   </body>
 </html>
+
+
+<script class="javascript">
+
+  window.onload = function() {
+    
+    let menus = [<?php echo $menus[0]['ids']; ?>];
+
+    console.log(menus);
+    console.log(menus.length);
+
+    for (let i = 0; i < menus.length; i++)
+    {
+      console.log( menus[i]);
+      $("#Submenu_" + menus[i]).click(function(){
+
+        event.preventDefault();
+
+        if ( !$('#pageSubmenu_' + menus[i]).is(':visible')) 
+        {
+          $("#pageSubmenu_" + menus[i]).show();
+          
+          for (let j = 0; j < menus.length; j++)
+          {
+            if ( menus[i] != menus[j])
+            {
+              $("#pageSubmenu_" + menus[j]).hide();
+            }
+          }
+         
+        } 
+        else 
+        {
+          $("#pageSubmenu_" + menus[i]).hide();
+        }
+
+      });
+
+    }
+
+  };
+
+
+</script>
